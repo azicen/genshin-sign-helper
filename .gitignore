@@ -13,3 +13,15 @@
 
 # Dependency directories (remove the comment below to include it)
 # vendor/
+
+# MAC
+.DS_Store
+
+# IDE
+.idea
+.vscode
+
+# CONF
+.env
+log.txt
+cookie.txt
