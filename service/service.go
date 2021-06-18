@@ -1,11 +1,11 @@
 package service
 
 import (
+	"genshin-sign-helper/conf"
 	"time"
 
 	"github.com/kardianos/service"
 
-	"genshin-sign-helper/conf"
 	log "genshin-sign-helper/util/logger"
 )
 
@@ -16,6 +16,7 @@ type Service struct {
 	Config   *service.Config
 	Instance service.Service
 	exit     chan struct{}
+	i        int
 }
 
 func Init() (prg *Service) {
@@ -25,6 +26,7 @@ func Init() (prg *Service) {
 			DisplayName: "GenshinImpact Sign Helper Service",
 			Description: "GenshinImpact mihoyo community sign helper.",
 		},
+		i: 0,
 	}
 	s, err := service.New(prg, prg.Config)
 	if err != nil {
@@ -78,10 +80,23 @@ func (p *Service) Start(s service.Service) error {
 
 func (p *Service) run() error {
 	// 运行间隔
-	ticker := time.NewTicker(time.Duration(conf.Cycle * int64(time.Hour)))
+	ticker := time.NewTicker(time.Hour)
 	for {
 		select {
 		case <-ticker.C:
+			currentTime := time.Now()
+			if currentTime.Hour() == 23 && currentTime.Day() > conf.SignRecordJSON.Time.Day() {
+				Task()
+				continue
+			}
+			if conf.SignTime > currentTime.Hour() {
+				continue
+			}
+			if p.i < conf.Cycle {
+				p.i++
+				continue
+			}
+			p.i = 0
 			Task()
 			break
 		case <-p.exit:

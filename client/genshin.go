@@ -73,11 +73,11 @@ func (g *GenshinClient) Sign(cookie string, roles model.GameRolesData) bool {
 	}
 	switch info.Code {
 	case 0:
-		log.Info("roles(%v:%v) sign success.", roles.UID, roles.Name)
+		log.Debug("roles(%v:%v) sign success.", roles.UID, roles.Name)
 		return true
 	case -5003:
-		log.Info("roles(%v:%v) sign info(%v). request failure. %v", roles.UID, roles.Name, info.Code, info.Msg, info.Data)
-		return false
+		log.Debug("roles(%v:%v) sign info(%v). request failure. %v", roles.UID, roles.Name, info.Code, info.Msg, info.Data)
+		return true
 	default:
 		log.Error("roles(%v:%v) sign error(%v). request failure. %v", roles.UID, roles.Name, info.Code, info.Msg, info.Data)
 		return false

@@ -44,12 +44,12 @@ func GetRandString(len int, seed int64) string {
 }
 
 //ReadFile 读取整个文件
-func ReadFile(path string) (string, error) {
+func ReadFile(path string) ([]byte, error) {
 	b, err := ioutil.ReadFile(path)
 	if err != nil {
-		return "", errors.New("unable to read file." + err.Error())
+		return nil, errors.New("unable to read file." + err.Error())
 	}
-	return string(b), nil
+	return b, nil
 }
 
 //ReadFileAllLine 按行读取文件
@@ -76,12 +76,12 @@ func ReadFileAllLine(path string, handle func(string)) error {
 	return nil
 }
 
-func StructToJSON(v interface{}) (string, error) {
+func StructToJSON(v interface{}) ([]byte, error) {
 	jsonByte, err := json.Marshal(v)
 	if err != nil {
-		return "", errors.New("unable convert struct to json." + err.Error())
+		return nil, errors.New("unable convert struct to json." + err.Error())
 	}
-	return string(jsonByte), nil
+	return jsonByte, nil
 }
 
 //CheckFileIsExist 判断文件是否存在，存在返回true，不存在返回false
