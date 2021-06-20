@@ -26,3 +26,6 @@
 log.txt
 cookie.txt
 record.json
+
+# releases
+releases/*

@@ -2,22 +2,64 @@ package client
 
 import (
 	"fmt"
+	"net/http"
+
+	uuid "github.com/satori/go.uuid"
 
 	"genshin-sign-helper/model"
+	"genshin-sign-helper/util"
 	"genshin-sign-helper/util/constant"
 	log "genshin-sign-helper/util/logger"
 )
 
-//GetUserGameRoles 获取用户游戏角色
+type GenshinClient struct {
+	*HTTPClient
+}
+
+// modifyHeader 添加访问mhy原神BBS需要的基本消息头
+func modifyHeader(cookie string) func(req *http.Request) error {
+	return func(req *http.Request) error {
+		AddBasicHeader()(req)
+		AddCookieHeader(cookie)(req)
+		req.Header.Add("x-rpc-device_id", uuid.NewV4().String())
+		return nil
+	}
+}
+
+// addExtraGenshinHeader 添加访问mhy原神BBS需要的额外消息头
+func addExtraGenshinHeader() func(req *http.Request) error {
+	return func(req *http.Request) error {
+		req.Header.Add("x-rpc-client_type", constant.ClientType)
+		req.Header.Add("x-rpc-app_version", constant.AppVersion)
+		req.Header.Add("DS", util.GetDs())
+		return nil
+	}
+}
+
+// GetMhyURL 组合URL
+func GetMhyURL(path, parameters string) (url string) {
+	if parameters == "" {
+		url = fmt.Sprintf("%s%s", constant.OpenApi, path)
+	} else {
+		url = fmt.Sprintf("%s%s%s", constant.OpenApi, path, parameters)
+	}
+	return
+}
+
+func NewGenshinClient() (g *GenshinClient) {
+	g = &GenshinClient{
+		HTTPClient: NewClient(),
+	}
+	return
+}
+
+// GetUserGameRoles 获取用户游戏角色
 func (g *GenshinClient) GetUserGameRoles(cookie string) (rolesList []model.GameRolesData) {
+	url := GetMhyURL(constant.GetUserGameRolesByCookie, "game_biz=hk4e_cn")
+
 	var info model.GameRolesInfo
-	err := g.SendGetMessage(
-		cookie,
-		constant.GetUserGameRolesByCookie,
-		"game_biz=hk4e_cn",
-		false,
-		&info,
-	)
+	err := g.SendGetMessage(url, nil, &info, modifyHeader(cookie))
+
 	if err != nil {
 		log.Error("unable to send http massage.", err)
 		return nil
@@ -34,16 +76,16 @@ func (g *GenshinClient) GetUserGameRoles(cookie string) (rolesList []model.GameR
 	return info.Data.List
 }
 
-//GetSignStateInfo 获取签到信息
+// GetSignStateInfo 获取签到信息
 func (g *GenshinClient) GetSignStateInfo(cookie string, roles model.GameRolesData) (data *model.SignStateData) {
-	var info model.SignStateInfo
-	err := g.SendGetMessage(
-		cookie,
+	url := GetMhyURL(
 		constant.GetBbsSignRewardInfo,
 		fmt.Sprintf("act_id=%s&region=%s&uid=%s", constant.ActID, roles.Region, roles.UID),
-		false,
-		&info,
 	)
+
+	var info model.SignStateInfo
+	err := g.SendGetMessage(url, nil, &info, modifyHeader(cookie))
+
 	if err != nil {
 		log.Error("unable to send http massage.", err)
 		return nil
@@ -59,18 +101,22 @@ func (g *GenshinClient) GetSignStateInfo(cookie string, roles model.GameRolesDat
 	return &info.Data
 }
 
+// Sign 进行签到
 func (g *GenshinClient) Sign(cookie string, roles model.GameRolesData) bool {
 	data := map[string]string{
 		"act_id": constant.ActID,
 		"region": roles.Region,
 		"uid":    roles.UID,
 	}
+	url := GetMhyURL(constant.PostSignInfo, "")
+
 	var info model.SignResponseInfo
-	err := g.SendPostMessage(cookie, constant.PostSignInfo, "", true, data, &info)
+	err := g.SendPostMessage(url, data, &info, modifyHeader(cookie), addExtraGenshinHeader())
 	if err != nil {
 		log.Error("unable to send http massage.", err)
 		return false
 	}
+
 	switch info.Code {
 	case 0:
 		log.Debug("roles(%v:%v) sign success.", roles.UID, roles.Name)
