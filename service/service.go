@@ -2,6 +2,7 @@ package service
 
 import (
 	"genshin-sign-helper/conf"
+	"genshin-sign-helper/util"
 	"time"
 
 	"github.com/kardianos/service"
@@ -13,10 +14,11 @@ import (
 // 程序结构。
 // 定义启动和停止方法。
 type Service struct {
-	Config   *service.Config
-	Instance service.Service
-	exit     chan struct{}
-	i        int
+	Config       *service.Config
+	Instance     service.Service
+	exit         chan struct{}
+	i            int
+	startingTime time.Time
 }
 
 func Init() (prg *Service) {
@@ -33,20 +35,11 @@ func Init() (prg *Service) {
 		log.Fatal(err.Error())
 	}
 	prg.Instance = s
-	errs := make(chan error, 5)
 
 	if err != nil {
 		log.Fatal(err.Error())
 	}
 
-	go func() {
-		for {
-			err := <-errs
-			if err != nil {
-				log.Info(err.Error())
-			}
-		}
-	}()
 	return
 }
 
@@ -61,11 +54,14 @@ func (p *Service) Control(svcFlag string) {
 }
 
 func (p *Service) Start(s service.Service) error {
+	Init()
+
 	if service.Interactive() {
 		log.Info("GenshinImpact Sign Helper Service Running in terminal.")
 	} else {
 		log.Info("GenshinImpact Sign Helper Service Running under service manager.")
 	}
+	p.startingTime = time.Now()
 	p.exit = make(chan struct{})
 
 	// 开始不应该阻塞。异步执行实际工作。
@@ -84,18 +80,25 @@ func (p *Service) run() error {
 	for {
 		select {
 		case <-ticker.C:
+			log.Debug("go i:%v", p.i)
 			currentTime := time.Now()
-			if currentTime.Hour() == 23 && currentTime.Day() > conf.SignRecordJSON.Time.Day() {
-				Task()
-				continue
-			}
-			if conf.SignTime > currentTime.Hour() {
+			if util.GetCurrentDayTimestamp() > util.GetDayTimestamp(conf.SignRecordJSON.Time) {
+				if currentTime.Hour() == 23 {
+					log.Debug("大于23时，且今日为签到，立刻签到 i:%v", p.i)
+					p.i = 0
+					Task()
+				} else if currentTime.Hour() > conf.SignTime {
+					log.Debug("已到设置签到时间，开始签到 i:%v", p.i)
+					p.i = 0
+					Task()
+				}
 				continue
 			}
 			if p.i < conf.Cycle {
 				p.i++
 				continue
 			}
+			log.Debug("定时签到任务开始 i:%v", p.i)
 			p.i = 0
 			Task()
 			break
@@ -108,6 +111,11 @@ func (p *Service) run() error {
 
 func (p *Service) Stop(s service.Service) error {
 	// Stop 中的任何工作都应该很快，通常最多几秒钟。
+	t := time.Since(p.startingTime)
+	h := t / time.Hour
+	t -= h * time.Hour
+	m := t / time.Minute
+	log.Info("Total working time %vH %vM", int64(h), int64(m))
 	log.Info("GenshinImpact Sign Helper Service Stopping!")
 	close(p.exit)
 	return nil
