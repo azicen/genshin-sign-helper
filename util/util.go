@@ -10,6 +10,10 @@ import (
 	"io/ioutil"
 	"math/rand"
 	"os"
+	"path"
+	"path/filepath"
+	"runtime"
+	"strings"
 	"time"
 
 	"genshin-sign-helper/util/constant"
@@ -91,4 +95,37 @@ func CheckFileIsExist(filename string) bool {
 		exist = false
 	}
 	return exist
+}
+
+//GetCurrentDir 获取当前运行目录
+func GetCurrentDir() string {
+	exePath, _ := os.Executable()
+
+	dir, _ := filepath.EvalSymlinks(filepath.Dir(exePath))
+
+	tmpDir := os.Getenv("TEMP")
+	if tmpDir == "" {
+		tmpDir = os.Getenv("TMP")
+	}
+	link, _ := filepath.EvalSymlinks(tmpDir)
+
+	if strings.Contains(dir, link)  {
+		var abPath string
+		_, filename, _, ok := runtime.Caller(0)
+		if ok {
+			abPath = path.Dir(filename)
+		}
+		return abPath
+	}
+	return dir
+}
+
+func GetDayTimestamp(t time.Time) int64 {
+	timeStr := t.Format("2006-01-02")
+	t2, _ := time.ParseInLocation("2006-01-02", timeStr, time.Local)
+	return t2.AddDate(0, 0, 1).Unix()
+}
+
+func GetCurrentDayTimestamp() int64 {
+	return GetDayTimestamp(time.Now())
 }

@@ -3,12 +3,13 @@ package logger
 import (
 	"bufio"
 	"fmt"
-	"genshin-sign-helper/conf"
 	"io"
 	"log"
 	"os"
 	"runtime"
 	"strings"
+
+	"genshin-sign-helper/conf"
 )
 
 const (
@@ -117,16 +118,17 @@ func BuildLogger(l string) {
 	}
 }
 
-func Init() {
-	logFile, err := os.OpenFile(conf.LogFile, os.O_WRONLY|os.O_APPEND|os.O_CREATE, 0666)
+func Init(file string) {
+	logFile, err := os.OpenFile(file, os.O_WRONLY|os.O_APPEND|os.O_CREATE, 0666)
 	if err != nil {
 		Fatal(err.Error())
 	}
 	fileIO = bufio.NewWriter(logFile)
 	mw := io.MultiWriter(os.Stdout, fileIO)
 	log.SetOutput(mw)
-
+	runtime.Caller(1)
 	//读取配置文件，设置日志级别
 	BuildLogger(conf.LogLevel)
 	detailed = conf.LogDetailed
+	Info("log file: %v", file)
 }

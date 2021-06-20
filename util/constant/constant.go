@@ -22,3 +22,11 @@ const (
 	//PostSignInfo 签到
 	PostSignInfo = "event/bbs_sign_reward/sign"
 )
+
+//文件名字
+const (
+	EnvFileName    = ".env"
+	RecordFileName = "record.json"
+	LogFileName    = "log.txt"
+	CookieFileName = "cookie.txt"
+)
