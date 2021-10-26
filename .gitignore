@@ -21,11 +21,8 @@
 .idea
 .vscode
 
-# CONF
-.env
-log.txt
-cookie.txt
-record.json
+# DEBUG
+debug
 
 # releases
 releases/*
