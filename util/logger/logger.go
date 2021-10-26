@@ -27,82 +27,6 @@ var level int
 var detailed bool
 var fileIO *bufio.Writer
 
-//Println 打印
-func Println(level, content string, v ...interface{}) {
-	//处理content中需要替换的值
-	count := strings.Count(content, "%v")
-	var v0 []interface{}
-	if count <= len(v) {
-		v0 = v[:count]
-		v = v[count:]
-	} else {
-		v0 = v
-		v = nil
-	}
-	content = fmt.Sprintf(content, v0...)
-
-	//获取详细日志数据
-	if detailed {
-		_, file, line, ok := runtime.Caller(2)
-		if ok {
-			content = fmt.Sprintf("%s:%d:%s", file, line, content)
-		} else {
-			content = fmt.Sprintf("%s:%s", "it was not possible to recover the information", content)
-		}
-	}
-
-	mag := fmt.Sprintf("%s %s ", level, content)
-	if v != nil {
-		mag = fmt.Sprintf(mag, v...)
-	}
-	log.Println(mag)
-	if err := fileIO.Flush(); err != nil {
-		panic("fileIO ERROR")
-	}
-}
-
-//Fatal 极端错误
-func Fatal(content string, v ...interface{}) {
-	if LevelError > level {
-		return
-	}
-	Println("[FATAL]", content, v...)
-	panic(content)
-	//os.Exit(0)
-}
-
-//Error 错误
-func Error(content string, v ...interface{}) {
-	if LevelError > level {
-		return
-	}
-	Println("[ERROR]", content, v...)
-}
-
-//Warning 警告
-func Warning(content string, v ...interface{}) {
-	if LevelWarning > level {
-		return
-	}
-	Println("[WARN ]", content, v...)
-}
-
-//Info 信息
-func Info(content string, v ...interface{}) {
-	if LevelInfo > level {
-		return
-	}
-	Println("[INFO ]", content, v...)
-}
-
-//Debug 校验
-func Debug(content string, v ...interface{}) {
-	if LevelDebug > level {
-		return
-	}
-	Println("[DEBUG]", content, v...)
-}
-
 //BuildLogger 构建logger
 func BuildLogger(l string) {
 	level = LevelError
@@ -131,4 +55,85 @@ func Init(file string) {
 	BuildLogger(conf.LogLevel)
 	detailed = conf.LogDetailed
 	Info("log file: %v", file)
+}
+
+func Println(mag string) {
+	log.Println(mag)
+	if err := fileIO.Flush(); err != nil {
+		panic("fileIO ERROR")
+	}
+}
+
+//Printf 打印
+func Printf(level, content string, v ...interface{}) {
+	//处理content中需要替换的值
+	count := strings.Count(content, "%v")
+	var v0 []interface{}
+	if count <= len(v) {
+		v0 = v[:count]
+		v = v[count:]
+	} else {
+		v0 = v
+		v = nil
+	}
+	content = fmt.Sprintf(content, v0...)
+
+	//获取详细日志数据
+	if detailed {
+		_, file, line, ok := runtime.Caller(2)
+		if ok {
+			content = fmt.Sprintf("%s:%d:%s", file, line, content)
+		} else {
+			content = fmt.Sprintf("%s:%s", "it was not possible to recover the information", content)
+		}
+	}
+
+	mag := fmt.Sprintf("%s %s ", level, content)
+	if v != nil {
+		mag = fmt.Sprintf(mag, v...)
+	}
+
+	Println(mag)
+}
+
+//Fatal 极端错误
+func Fatal(content string, v ...interface{}) {
+	if LevelError > level {
+		return
+	}
+	Printf("[FATAL]", content, v...)
+	panic(content)
+	//os.Exit(0)
+}
+
+//Error 错误
+func Error(content string, v ...interface{}) {
+	if LevelError > level {
+		return
+	}
+	Printf("[ERROR]", content, v...)
+}
+
+//Warning 警告
+func Warning(content string, v ...interface{}) {
+	if LevelWarning > level {
+		return
+	}
+	Printf("[WARN ]", content, v...)
+}
+
+//Info 信息
+func Info(content string, v ...interface{}) {
+	if LevelInfo > level {
+		return
+	}
+	Printf("[INFO ]", content, v...)
+}
+
+//Debug 校验
+func Debug(content string, v ...interface{}) {
+	if LevelDebug > level {
+		return
+	}
+	Printf("[DEBUG]", content, v...)
 }

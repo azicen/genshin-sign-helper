@@ -117,7 +117,7 @@ func (g *HTTPClient) SendMessage(method, url string, body, pRet interface{}, mod
 	return g.Send(req, pRet)
 }
 
-// SendMessage 发送GET消息
+// SendGetMessage 发送GET消息
 //  param:
 //    url		string		地址
 //    pRet		interface{}	返回模型，必须是指针
@@ -128,7 +128,7 @@ func (g *HTTPClient) SendGetMessage(url string, body, pRet interface{}, modify .
 	return g.SendMessage(http.MethodGet, url, body, pRet, modify...)
 }
 
-// SendMessage 发送POST消息
+// SendPostMessage 发送POST消息
 //  param:
 //    url		string		地址
 //    pRet		interface{}	返回模型，必须是指针
